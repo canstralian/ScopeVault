@@ -1,0 +1,22 @@
+At a high level, it is a staged bug bounty checklist: expand scope, discover hosts and inputs, then test major vulnerability classes across config, transport, auth, session, authorization, input validation, DoS, business logic, crypto, uploads, payments, and browser features. Recon is front-loaded with subdomain and host discovery, then it shifts into crawling, endpoint discovery, JS analysis, and manual OSINT.  ￼
+
+The right mental model is: this is a coverage engine, not a playbook. It is designed to reduce blind spots, not to tell you what matters most on a modern target. In practice, that means it helps you avoid forgetting whole bug classes, but it does not give you a strong prioritization loop.  ￼
+
+Where it works:
+It is good as a memory scaffold. The flow from surface expansion to entry-point discovery to boundary testing to injection testing is sound, and the checklist is broad enough to keep your assessment from collapsing into whatever tool output is loudest.  ￼  ￼
+
+Where it breaks:
+It is tool-centric, relatively flat in priority, and too linear. Modern targets usually reward deeper focus on APIs, auth/state transitions, and business invariants more than broad, even coverage across every classic class. A stronger workflow is iterative: recon → hypothesis → test → signal → refine.  ￼
+
+My assessment:
+Use it as a checklist at the edge of your process, not at the center of it. The center should be a target model: asset graph, input map, trust boundaries, then high-leverage tests against state confusion, authorization drift, and logic flaws. That preserves the README’s coverage benefits without inheriting its noise.  ￼  ￼
+
+If you want to operationalize it, I’d refactor it into four layers:
+	1.	Asset graph
+	2.	Input map
+	3.	Constraint model
+	4.	Attack engine
+
+That turns a static checklist into a feedback loop that can actually think.
+
+The original link is here: https://github.com/amrelsagaei/Bug-Bounty-Hunting-Methodology-2025/blob/main/README.md
