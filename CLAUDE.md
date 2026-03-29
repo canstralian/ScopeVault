@@ -17,10 +17,9 @@ ScopeVault is a minimal, scope-enforced bug bounty orchestration CLI. It wraps e
 ## Repository Structure
 
 ```
-ScopeVault/
-├── cli.py          # Entire application — CLI parser + all command logic
-├── scope.json      # Scope definition (allowed_hosts, allow_disruptive)
-└── README.md       # Brief usage examples
+cli.py          # Entire application — CLI parser + all command logic
+scope.json      # Scope definition (allowed_hosts, allow_disruptive)
+README.md       # Brief usage examples
 ```
 
 **At runtime**, the tool creates:
