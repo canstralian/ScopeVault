@@ -6,11 +6,11 @@ This document describes the ScopeVault codebase for AI assistants. Read this bef
 
 ## Project Overview
 
-ScopeVault is a minimal, scope-enforced bug bounty orchestration CLI. It wraps external security tools (`subfinder`, `httpx`, `gau`, `nuclei`, etc.), enforces target scope, and collects run artifacts (logs, reports) in a structured directory tree.
+ScopeVault is a minimal bug bounty orchestration CLI. It wraps external security tools (`subfinder`, `httpx`, `gau`, `nuclei`, etc.), validates target scope during initialization using `scope.json`, and collects run artifacts (logs, reports) in a structured directory tree. Subsequent commands operate on existing runs/targets and do not re-validate scope.
 
 **Language**: Python 3, standard library only — no external dependencies.
 **Entry point**: `cli.py` (single-file, ~100 lines)
-**Config**: `scope.json` defines allowed targets.
+**Config**: `scope.json` defines allowed targets and is consulted by initialization commands to determine whether a target is in scope.
 
 ---
 
