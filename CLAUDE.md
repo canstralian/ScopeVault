@@ -60,7 +60,7 @@ All commands are registered as `argparse` subparsers. Each binds to a handler fu
 | Command | Handler | Required args | What it does |
 |---|---|---|---|
 | `init` | `init()` | `--target`, `--scope` | Validates scope, creates run dir, writes `manifest.json` |
-| `recon` | `recon()` | `--target` | Runs `subfinder -d {target} -silent` then `httpx -silent`, logs to `recon.log` |
+| recon | recon() | --target | Runs `subfinder -d {target} -silent`, logging output to `recon.log` |
 | `map` | `map_stage()` | `--target` | Runs `gau {target}`, logs to `map.log` |
 | `attack` | `attack()` | `--target`, `--tool` | Runs `{tool} {extra}`, requires `--allow` if `--tag disruptive` |
 | `report` | `report()` | `--target` | Writes `REPORT.md` header stub |
