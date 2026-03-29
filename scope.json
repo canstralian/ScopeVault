@@ -1,0 +1,6 @@
+{
+  "allowed_hosts": [
+    "example.com"
+  ],
+  "allow_disruptive": false
+}
