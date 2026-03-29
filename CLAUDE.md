@@ -29,7 +29,7 @@ runs/
 └── {target}/
     └── {YYYYMMDD-HHMMSS}/    # UTC timestamp, one dir per run
         ├── manifest.json     # {"target": "...", "run_id": "..."}
-        ├── recon.log         # subfinder + httpx output
+        ├── recon.log         # subfinder output
         ├── map.log           # gau output
         ├── attack.log        # user-specified tool output
         └── REPORT.md         # Generated findings report
