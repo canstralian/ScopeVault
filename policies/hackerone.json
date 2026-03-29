@@ -1,0 +1,38 @@
+{
+  "allowed_hosts": [],
+  "rules": [
+    {
+      "tool": "ffuf",
+      "blocked_tags": ["disruptive"],
+      "blocked_endpoints": ["auth", "admin"],
+      "reason": "HackerOne: aggressive fuzzing on auth/admin endpoints violates most program policies"
+    },
+    {
+      "tool": "sqlmap",
+      "blocked_tags": ["disruptive"],
+      "blocked_phases": ["exploit"],
+      "reason": "HackerOne: automated exploitation beyond PoC is out of scope"
+    },
+    {
+      "tool": "hydra",
+      "blocked_tags": ["safe", "disruptive"],
+      "reason": "HackerOne: credential brute-force is universally prohibited"
+    },
+    {
+      "tool": "nuclei",
+      "blocked_phases": ["exploit"],
+      "reason": "HackerOne: nuclei exploit templates require explicit written permission"
+    },
+    {
+      "tool": "nmap",
+      "blocked_tags": ["disruptive"],
+      "blocked_phases": ["exploit"],
+      "reason": "HackerOne: aggressive nmap scans may violate availability SLAs"
+    },
+    {
+      "tool": "metasploit",
+      "blocked_tags": ["safe", "disruptive"],
+      "reason": "HackerOne: Metasploit exploitation is blocked; PoC must be manual"
+    }
+  ]
+}

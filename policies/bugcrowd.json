@@ -1,0 +1,39 @@
+{
+  "allowed_hosts": [],
+  "rules": [
+    {
+      "tool": "ffuf",
+      "blocked_tags": ["disruptive"],
+      "blocked_endpoints": ["auth", "admin"],
+      "reason": "Bugcrowd: disruptive fuzzing on sensitive endpoints prohibited under standard rules of engagement"
+    },
+    {
+      "tool": "sqlmap",
+      "blocked_tags": ["disruptive"],
+      "blocked_phases": ["exploit"],
+      "reason": "Bugcrowd: automated SQL exploitation beyond detection is out of scope"
+    },
+    {
+      "tool": "hydra",
+      "blocked_tags": ["safe", "disruptive"],
+      "reason": "Bugcrowd: credential stuffing/brute-force is blocked"
+    },
+    {
+      "tool": "nuclei",
+      "blocked_tags": ["disruptive"],
+      "blocked_phases": ["exploit"],
+      "reason": "Bugcrowd: nuclei disruptive/exploit templates require program-specific written approval"
+    },
+    {
+      "tool": "nmap",
+      "blocked_tags": ["disruptive"],
+      "reason": "Bugcrowd: aggressive port scanning may cause availability issues"
+    },
+    {
+      "tool": "wfuzz",
+      "blocked_tags": ["disruptive"],
+      "blocked_endpoints": ["auth"],
+      "reason": "Bugcrowd: auth endpoint fuzzing with high concurrency is prohibited"
+    }
+  ]
+}

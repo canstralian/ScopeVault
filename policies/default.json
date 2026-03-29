@@ -1,0 +1,29 @@
+{
+  "allowed_hosts": [],
+  "rules": [
+    {
+      "tool": "ffuf",
+      "blocked_tags": ["disruptive"],
+      "blocked_endpoints": ["auth"],
+      "reason": "Fuzzing auth endpoints or disruptive mode is not permitted by default"
+    },
+    {
+      "tool": "sqlmap",
+      "blocked_tags": ["disruptive"],
+      "blocked_phases": ["exploit"],
+      "reason": "sqlmap in exploit phase or disruptive mode requires explicit policy override"
+    },
+    {
+      "tool": "hydra",
+      "blocked_tags": ["safe", "disruptive"],
+      "reason": "Credential brute-force is blocked by default policy"
+    },
+    {
+      "tool": "nuclei",
+      "blocked_tags": ["disruptive"],
+      "blocked_phases": ["exploit"],
+      "allowed_endpoints": ["static"],
+      "reason": "nuclei disruptive/exploit mode is blocked except on static endpoints"
+    }
+  ]
+}
