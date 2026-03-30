@@ -191,7 +191,7 @@ prepare_dist() {
     if [[ "$DRY_RUN" == "true" ]]; then
       printf '[dry-run] %s\n' "$BUILD_CMD"
     else
-      bash -lc "$BUILD_CMD"
+      eval "$BUILD_CMD"
     fi
   fi
 
