@@ -270,6 +270,8 @@ create_release() {
 
   if [[ "$LATEST" == "true" ]]; then
     args+=(--latest)
+  elif [[ "$LATEST" == "false" ]]; then
+    args+=(--latest=false)
   fi
 
   local assets=()
