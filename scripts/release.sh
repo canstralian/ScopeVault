@@ -25,6 +25,7 @@ BUILD_CMD="${BUILD_CMD:-}"
 INCLUDE_SOURCE_BUNDLE="${INCLUDE_SOURCE_BUNDLE:-true}"
 
 WORKDIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$WORKDIR"
 TMP_DIR=""
 ORIGINAL_REF="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
 
