@@ -175,7 +175,11 @@ ensure_tag() {
     log "tag $TAG already exists at $existing_commit"
   else
     run git tag -a "$TAG" "$TARGET_COMMIT" -m "Release $TAG"
-    log "created tag $TAG at $TARGET_COMMIT"
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+      log "would create tag $TAG at $TARGET_COMMIT (dry-run)"
+    else
+      log "created tag $TAG at $TARGET_COMMIT"
+    fi
   fi
 
   if [[ "$SKIP_TAG_PUSH" != "true" ]]; then
