@@ -25,7 +25,7 @@ def run_cmd(cmd, log_file):
     with open(log_file, "a") as f:
         f.write(f"\n$ {cmd}\n")
         p = subprocess.Popen(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
         for line in p.stdout:
             decoded = line.decode()
