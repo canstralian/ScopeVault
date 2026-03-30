@@ -146,6 +146,7 @@ check_prereqs() {
   require_cmd git
   require_cmd gh
   require_cmd jq
+  require_cmd sha256sum
   gh auth status >/dev/null 2>&1 || die "GitHub CLI is not authenticated"
 }
 
