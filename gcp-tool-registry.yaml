@@ -1,0 +1,700 @@
+registry:
+  name: gcp-bug-bounty-mcp-fabric
+  version: "1.0.0"
+  description: >
+    Google Cloud specific MCP registry for authorized bug bounty assessments.
+    Focuses on attribution, trust-boundary mapping, low-impact validation,
+    and report-ready evidence for GCP-backed targets.
+
+  global_policy:
+    scope_required: true
+    explicit_ownership_required: true
+    third_party_hosts_forbidden: true
+    default_mode: passive
+    execution_modes:
+      - passive
+      - safe_active
+      - guarded_active
+    evidence:
+      immutable_receipts: true
+      append_only: true
+    risk_controls:
+      disruptive_actions_require_policy: true
+      state_change_requires_explicit_allow: true
+      rate_limit_required: true
+      concurrency_cap_required: true
+
+  shared_types:
+    ScopeRef:
+      type: object
+      required: [program_id, scope_id]
+      properties:
+        program_id: { type: string }
+        scope_id: { type: string }
+
+    RunContext:
+      type: object
+      required: [run_id, mode, started_at]
+      properties:
+        run_id: { type: string }
+        mode:
+          type: string
+          enum: [passive, safe_active, guarded_active]
+        started_at: { type: string, format: date-time }
+        operator: { type: string }
+
+    TargetRef:
+      type: object
+      required: [target, target_type]
+      properties:
+        target: { type: string }
+        target_type:
+          type: string
+          enum:
+            - fqdn
+            - domain
+            - wildcard_domain
+            - url
+            - ip
+            - cidr
+            - gcp_hostname
+            - bucket
+            - object_url
+            - api_endpoint
+
+    GcpAssetRef:
+      type: object
+      required: [asset_id, asset_type, scope_status]
+      properties:
+        asset_id: { type: string }
+        asset_type:
+          type: string
+          enum:
+            - cloud_run
+            - cloud_function
+            - app_engine
+            - gke_frontend
+            - gce_service
+            - load_balancer
+            - cloud_storage_bucket
+            - cloud_storage_object
+            - firebase_hosting
+            - firestore_surface
+            - realtime_db_surface
+            - iap_frontend
+            - google_api_integration
+            - signed_url_surface
+            - metadata_exposure_surface
+            - auth_proxy_surface
+        scope_status:
+          type: string
+          enum:
+            - IN_SCOPE_CONFIRMED
+            - IN_SCOPE_DERIVED
+            - UNVERIFIED
+            - OUT_OF_SCOPE
+
+    EvidenceRef:
+      type: object
+      required: [run_id, path]
+      properties:
+        run_id: { type: string }
+        path: { type: string }
+
+  servers:
+
+    - server_id: gcp-attribution-server
+      transport: stdio
+      description: >
+        Binds Google Cloud resources to authorized scope. This is the cloud-specific
+        ownership gate. Nothing downstream should act on ambiguous assets.
+      tools:
+
+        - name: discover_gcp_bound_assets
+          description: >
+            Identifies GCP-related assets referenced by in-scope domains, endpoints,
+            application responses, JS configs, storage links, and signed URLs.
+          phase: recon
+          risk: passive
+          input_schema:
+            type: object
+            required: [scope_ref, allowed_assets_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              allowed_assets_path: { type: string }
+              recon_artifacts_path: { type: string }
+              mapping_artifacts_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [gcp_asset_candidates_path]
+            properties:
+              gcp_asset_candidates_path: { type: string }
+
+        - name: classify_gcp_asset_ownership
+          description: >
+            Classifies each candidate as IN_SCOPE_CONFIRMED, IN_SCOPE_DERIVED,
+            UNVERIFIED, or OUT_OF_SCOPE and records supporting evidence.
+          phase: gate
+          risk: passive
+          input_schema:
+            type: object
+            required: [scope_ref, gcp_asset_candidates_path]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              gcp_asset_candidates_path: { type: string }
+              policy_pack_path: { type: string }
+          output_schema:
+            type: object
+            required: [gcp_asset_bindings_path]
+            properties:
+              gcp_asset_bindings_path: { type: string }
+
+        - name: build_gcp_asset_inventory
+          description: >
+            Produces a normalized inventory of in-scope GCP assets grouped by surface type.
+          phase: recon
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_asset_bindings_path]
+            properties:
+              gcp_asset_bindings_path: { type: string }
+          output_schema:
+            type: object
+            required: [gcp_assets_path]
+            properties:
+              gcp_assets_path: { type: string }
+
+    - server_id: gcp-surface-mapper
+      transport: stdio
+      description: >
+        Maps cloud-specific public surfaces including storage, serverless, Firebase,
+        proxy frontends, and signed access patterns.
+      tools:
+
+        - name: map_serverless_surfaces
+          description: >
+            Identifies Cloud Run, Cloud Functions, and App Engine exposure paths,
+            route classes, and auth expectations from observed application behavior.
+          phase: mapping
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_assets_path]
+            properties:
+              gcp_assets_path: { type: string }
+              crawl_index_path: { type: string }
+              js_routes_path: { type: string }
+          output_schema:
+            type: object
+            required: [serverless_endpoints_path]
+            properties:
+              serverless_endpoints_path: { type: string }
+
+        - name: map_storage_surfaces
+          description: >
+            Identifies Cloud Storage buckets, object paths, signed URL patterns,
+            and object access flows tied to the authorized application.
+          phase: mapping
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_assets_path]
+            properties:
+              gcp_assets_path: { type: string }
+              crawl_index_path: { type: string }
+              request_logs_path: { type: string }
+          output_schema:
+            type: object
+            required: [bucket_inventory_path, signed_url_observations_path]
+            properties:
+              bucket_inventory_path: { type: string }
+              signed_url_observations_path: { type: string }
+
+        - name: map_firebase_surfaces
+          description: >
+            Identifies Firebase Hosting, Firestore-linked client flows, Realtime Database
+            references, and public client configuration relevant to target access control.
+          phase: mapping
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_assets_path]
+            properties:
+              gcp_assets_path: { type: string }
+              js_routes_path: { type: string }
+              tech_profiles_path: { type: string }
+          output_schema:
+            type: object
+            required: [firebase_surface_path]
+            properties:
+              firebase_surface_path: { type: string }
+
+        - name: map_identity_and_proxy_surfaces
+          description: >
+            Identifies IAP frontends, auth proxy assumptions, token-handling surfaces,
+            backend trust headers, and identity boundary clues.
+          phase: mapping
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_assets_path]
+            properties:
+              gcp_assets_path: { type: string }
+              request_logs_path: { type: string }
+              response_logs_path: { type: string }
+              tech_profiles_path: { type: string }
+          output_schema:
+            type: object
+            required: [identity_paths_path, proxy_surface_path]
+            properties:
+              identity_paths_path: { type: string }
+              proxy_surface_path: { type: string }
+
+    - server_id: gcp-trust-model-server
+      transport: stdio
+      description: >
+        Builds cloud-specific trust boundaries and generates focused hypotheses.
+      tools:
+
+        - name: derive_gcp_trust_boundaries
+          description: >
+            Models public access assumptions, object ownership boundaries, auth proxy trust,
+            signed-access boundaries, and tenant/project separation clues.
+          phase: modeling
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_assets_path]
+            properties:
+              gcp_assets_path: { type: string }
+              serverless_endpoints_path: { type: string }
+              bucket_inventory_path: { type: string }
+              firebase_surface_path: { type: string }
+              identity_paths_path: { type: string }
+          output_schema:
+            type: object
+            required: [gcp_trust_boundaries_path]
+            properties:
+              gcp_trust_boundaries_path: { type: string }
+
+        - name: generate_gcp_hypotheses
+          description: >
+            Produces cloud-specific hypotheses prioritized by leverage and safe validation path.
+          phase: modeling
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_assets_path, gcp_trust_boundaries_path]
+            properties:
+              gcp_assets_path: { type: string }
+              gcp_trust_boundaries_path: { type: string }
+              policy_pack_path: { type: string }
+          output_schema:
+            type: object
+            required: [gcp_hypotheses_path]
+            properties:
+              gcp_hypotheses_path: { type: string }
+
+    - server_id: gcp-storage-validation-server
+      transport: stdio
+      description: >
+        Validates Cloud Storage exposure with low-impact proof only.
+      tools:
+
+        - name: test_bucket_listing_exposure
+          description: >
+            Checks whether listing behavior is exposed where the application model
+            suggests it should not be. Uses minimal requests and stops on ambiguity.
+          phase: testing
+          risk: safe_active
+          input_schema:
+            type: object
+            required: [scope_ref, bucket_inventory_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              bucket_inventory_path: { type: string }
+              gcp_hypotheses_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [bucket_listing_candidates_path]
+            properties:
+              bucket_listing_candidates_path: { type: string }
+
+        - name: test_object_access_controls
+          description: >
+            Validates object read exposure and ownership drift using the minimum proof required.
+          phase: testing
+          risk: safe_active
+          input_schema:
+            type: object
+            required: [scope_ref, bucket_inventory_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              bucket_inventory_path: { type: string }
+              signed_url_observations_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [object_access_candidates_path]
+            properties:
+              object_access_candidates_path: { type: string }
+
+        - name: test_signed_url_constraints
+          description: >
+            Validates whether signed URLs appear over-broad, reusable beyond intended context,
+            or weakly bound to object ownership assumptions.
+          phase: testing
+          risk: safe_active
+          input_schema:
+            type: object
+            required: [scope_ref, signed_url_observations_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              signed_url_observations_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [signed_url_candidates_path]
+            properties:
+              signed_url_candidates_path: { type: string }
+
+    - server_id: gcp-serverless-validation-server
+      transport: stdio
+      description: >
+        Validates Cloud Run, Functions, and App Engine auth and route exposure.
+      tools:
+
+        - name: test_serverless_auth_expectations
+          description: >
+            Checks whether serverless endpoints are callable without the auth controls
+            implied by the application model.
+          phase: testing
+          risk: safe_active
+          input_schema:
+            type: object
+            required: [scope_ref, serverless_endpoints_path, gcp_trust_boundaries_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              serverless_endpoints_path: { type: string }
+              gcp_trust_boundaries_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [serverless_auth_candidates_path]
+            properties:
+              serverless_auth_candidates_path: { type: string }
+
+        - name: test_internal_route_exposure
+          description: >
+            Checks whether debug, admin, health, or internal-looking routes are exposed
+            through public cloud-managed frontends.
+          phase: testing
+          risk: safe_active
+          input_schema:
+            type: object
+            required: [scope_ref, serverless_endpoints_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              serverless_endpoints_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [internal_route_candidates_path]
+            properties:
+              internal_route_candidates_path: { type: string }
+
+    - server_id: gcp-identity-validation-server
+      transport: stdio
+      description: >
+        Validates identity, proxy trust, IAP assumptions, and header-boundary drift.
+      tools:
+
+        - name: test_proxy_header_trust
+          description: >
+            Checks whether backend authorization or identity logic appears to trust headers
+            that should only be asserted by internal proxies or edge infrastructure.
+          phase: testing
+          risk: guarded_active
+          input_schema:
+            type: object
+            required: [scope_ref, proxy_surface_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              proxy_surface_path: { type: string }
+              gcp_hypotheses_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [header_trust_candidates_path]
+            properties:
+              header_trust_candidates_path: { type: string }
+
+        - name: test_iap_boundary_drift
+          description: >
+            Validates whether the backend behavior remains secure when the application model
+            implies protection by Identity-Aware Proxy or equivalent edge auth.
+          phase: testing
+          risk: guarded_active
+          input_schema:
+            type: object
+            required: [scope_ref, identity_paths_path, gcp_trust_boundaries_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              identity_paths_path: { type: string }
+              gcp_trust_boundaries_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [iap_candidates_path]
+            properties:
+              iap_candidates_path: { type: string }
+
+    - server_id: firebase-validation-server
+      transport: stdio
+      description: >
+        Validates Firebase-linked exposure and rules-model mismatches through application-observed paths.
+      tools:
+
+        - name: test_firebase_access_model
+          description: >
+            Checks whether observed Firebase-linked client flows appear weaker than the
+            access model implied by the application.
+          phase: testing
+          risk: safe_active
+          input_schema:
+            type: object
+            required: [scope_ref, firebase_surface_path, gcp_trust_boundaries_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              firebase_surface_path: { type: string }
+              gcp_trust_boundaries_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [firebase_candidates_path]
+            properties:
+              firebase_candidates_path: { type: string }
+
+        - name: test_tenant_object_boundary_drift
+          description: >
+            Validates whether object- or tenant-level access appears inconsistent
+            with the intended client or rules model.
+          phase: testing
+          risk: safe_active
+          input_schema:
+            type: object
+            required: [scope_ref, firebase_surface_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              firebase_surface_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [firebase_tenant_candidates_path]
+            properties:
+              firebase_tenant_candidates_path: { type: string }
+
+    - server_id: gcp-topology-observer
+      transport: stdio
+      description: >
+        Records project topology leaks and cloud metadata clues that increase exploitability
+        without overstating impact.
+      tools:
+
+        - name: observe_project_structure_leaks
+          description: >
+            Records leaked project identifiers, service names, bucket naming conventions,
+            region hints, and cloud routing details that improve the attack model.
+          phase: testing
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_assets_path]
+            properties:
+              gcp_assets_path: { type: string }
+              response_logs_path: { type: string }
+          output_schema:
+            type: object
+            required: [project_topology_observations_path]
+            properties:
+              project_topology_observations_path: { type: string }
+
+        - name: observe_metadata_exposure_indicators
+          description: >
+            Records metadata-like behaviors or service identity clues exposed externally,
+            without escalating into unsafe probing.
+          phase: testing
+          risk: passive
+          input_schema:
+            type: object
+            required: [gcp_assets_path]
+            properties:
+              gcp_assets_path: { type: string }
+              response_logs_path: { type: string }
+              tech_profiles_path: { type: string }
+          output_schema:
+            type: object
+            required: [metadata_exposure_checks_path]
+            properties:
+              metadata_exposure_checks_path: { type: string }
+
+    - server_id: gcp-validation-server
+      transport: stdio
+      description: >
+        Reproduces GCP-specific candidate findings and reduces them to minimal evidence bundles.
+      tools:
+
+        - name: validate_gcp_candidate_finding
+          description: >
+            Confirms scope compliance, reproducibility, minimal proof, and cloud-specific impact boundaries.
+          phase: validation
+          risk: safe_active
+          input_schema:
+            type: object
+            required: [scope_ref, candidate_path, run]
+            properties:
+              scope_ref: { $ref: "#/registry/shared_types/ScopeRef" }
+              candidate_path: { type: string }
+              run: { $ref: "#/registry/shared_types/RunContext" }
+          output_schema:
+            type: object
+            required: [verdict, evidence_bundle_path]
+            properties:
+              verdict:
+                type: string
+                enum: [confirmed, rejected, needs_review]
+              evidence_bundle_path: { type: string }
+
+        - name: score_gcp_impact
+          description: >
+            Produces a constrained impact assessment that distinguishes exposure,
+            auth drift, tenant break, and chain potential.
+          phase: validation
+          risk: passive
+          input_schema:
+            type: object
+            required: [evidence_bundle_path]
+            properties:
+              evidence_bundle_path: { type: string }
+          output_schema:
+            type: object
+            required: [impact_assessment_path]
+            properties:
+              impact_assessment_path: { type: string }
+
+    - server_id: gcp-report-server
+      transport: stdio
+      description: >
+        Generates cloud-focused reports aligned to primitive -> boundary -> impact.
+      tools:
+
+        - name: generate_gcp_bug_report
+          description: >
+            Creates a submission-ready report for a confirmed GCP-specific issue.
+          phase: reporting
+          risk: passive
+          input_schema:
+            type: object
+            required: [evidence_bundle_path, impact_assessment_path]
+            properties:
+              evidence_bundle_path: { type: string }
+              impact_assessment_path: { type: string }
+              template: { type: string, default: "standard-gcp-bounty-report" }
+          output_schema:
+            type: object
+            required: [report_path]
+            properties:
+              report_path: { type: string }
+
+        - name: generate_gcp_triage_summary
+          description: >
+            Produces a concise triage summary highlighting cloud surface, broken assumption,
+            and practical remediation direction.
+          phase: reporting
+          risk: passive
+          input_schema:
+            type: object
+            required: [report_path]
+            properties:
+              report_path: { type: string }
+          output_schema:
+            type: object
+            required: [summary_path]
+            properties:
+              summary_path: { type: string }
+
+    - server_id: evidence-server
+      transport: stdio
+      description: >
+        Append-only evidence notarization layer for cloud findings.
+      tools:
+
+        - name: append_report
+          description: >
+            Immutably binds a phase report or final report to the audit chain after integrity verification.
+          phase: governance
+          risk: passive
+          input_schema:
+            type: object
+            required: [report]
+            properties:
+              report:
+                type: object
+          output_schema:
+            type: object
+            required: [stored, report_ref]
+            properties:
+              stored: { type: boolean }
+              report_ref: { type: string }
+              log_sequence: { type: integer }
+
+  orchestrations:
+
+    - name: gcp-asset-binding-gate
+      description: >
+        No GCP-specific validation occurs until cloud resources are discovered,
+        ownership-classified, and inventoried.
+      steps:
+        - gcp-attribution-server.discover_gcp_bound_assets
+        - gcp-attribution-server.classify_gcp_asset_ownership
+        - gcp-attribution-server.build_gcp_asset_inventory
+
+    - name: gcp-mapping-and-modeling
+      description: >
+        Maps cloud-specific surfaces and derives trust boundaries and hypotheses.
+      steps:
+        - gcp-surface-mapper.map_serverless_surfaces
+        - gcp-surface-mapper.map_storage_surfaces
+        - gcp-surface-mapper.map_firebase_surfaces
+        - gcp-surface-mapper.map_identity_and_proxy_surfaces
+        - gcp-trust-model-server.derive_gcp_trust_boundaries
+        - gcp-trust-model-server.generate_gcp_hypotheses
+
+    - name: gcp-focused-validation
+      description: >
+        Runs only the validation branches supported by the mapped surface and hypothesis queue.
+      steps:
+        - gcp-storage-validation-server.test_bucket_listing_exposure
+        - gcp-storage-validation-server.test_object_access_controls
+        - gcp-storage-validation-server.test_signed_url_constraints
+        - gcp-serverless-validation-server.test_serverless_auth_expectations
+        - gcp-serverless-validation-server.test_internal_route_exposure
+        - gcp-identity-validation-server.test_proxy_header_trust
+        - gcp-identity-validation-server.test_iap_boundary_drift
+        - firebase-validation-server.test_firebase_access_model
+        - firebase-validation-server.test_tenant_object_boundary_drift
+        - gcp-topology-observer.observe_project_structure_leaks
+        - gcp-topology-observer.observe_metadata_exposure_indicators
+
+    - name: gcp-signal-to-report
+      description: >
+        Reproduces findings, scores cloud impact, writes report, and commits to evidence.
+      steps:
+        - gcp-validation-server.validate_gcp_candidate_finding
+        - gcp-validation-server.score_gcp_impact
+        - gcp-report-server.generate_gcp_bug_report
+        - gcp-report-server.generate_gcp_triage_summary
+        - evidence-server.append_report
