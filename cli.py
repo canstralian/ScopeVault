@@ -1,31 +1,43 @@
 #!/usr/bin/env python3
-import os, json, argparse, subprocess, datetime
+import argparse
+import datetime
+import json
+import os
+import subprocess
+
 
 def now():
     return datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
 
+
 def load_scope(path):
     with open(path) as f:
         return json.load(f)
+
 
 def ensure_in_scope(target, scope):
     allowed = scope.get("allowed_hosts", [])
     if not any(target.endswith(a) for a in allowed):
         raise Exception(f"Target {target} not in allowed scope")
 
+
 def run_cmd(cmd, log_file):
     with open(log_file, "a") as f:
         f.write(f"\n$ {cmd}\n")
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        p = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
         for line in p.stdout:
             decoded = line.decode()
             print(decoded, end="")
             f.write(decoded)
 
+
 def latest_run(base, target):
     target_dir = os.path.join(base, target)
     runs = sorted(os.listdir(target_dir))
     return os.path.join(target_dir, runs[-1])
+
 
 def init(args):
     scope = load_scope(args.scope)
@@ -37,16 +49,19 @@ def init(args):
         json.dump({"target": args.target, "run_id": run_id}, f, indent=2)
     print(f"[+] Run initialized: {run_path}")
 
+
 def recon(args):
     run_path = latest_run(args.base, args.target)
     log = os.path.join(run_path, "recon.log")
     run_cmd(f"subfinder -d {args.target} -silent", log)
-    run_cmd(f"httpx -silent", log)
+    run_cmd("httpx -silent", log)
+
 
 def map_stage(args):
     run_path = latest_run(args.base, args.target)
     log = os.path.join(run_path, "map.log")
     run_cmd(f"gau {args.target}", log)
+
 
 def attack(args):
     run_path = latest_run(args.base, args.target)
@@ -55,12 +70,14 @@ def attack(args):
         raise Exception("Disruptive actions not allowed")
     run_cmd(f"{args.tool} {args.extra}", log)
 
+
 def report(args):
     run_path = latest_run(args.base, args.target)
     report = os.path.join(run_path, "REPORT.md")
     with open(report, "w") as f:
         f.write(f"# Report for {args.target}\n")
     print(f"[+] Report generated: {report}")
+
 
 parser = argparse.ArgumentParser()
 sub = parser.add_subparsers()

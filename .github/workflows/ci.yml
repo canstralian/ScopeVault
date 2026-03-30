@@ -40,17 +40,13 @@ jobs:
       - name: Lint Code
         run: |
           pip install flake8==6.1.0
-          flake8 --max-line-length=88 --exclude=.git,__pycache__,migrations --ignore=E401,F401 .
+          flake8 --max-line-length=88 --exclude=.git,__pycache__,migrations .
 
-      # Step 5: Run Tests (skipped gracefully when no test files exist)
+      # Step 5: Run Tests (exit code 5 means no tests collected; treat as success)
       - name: Run Tests
         run: |
           pip install pytest pytest-cov
-          if ls tests/test_*.py >/dev/null 2>&1 || ls test_*.py >/dev/null 2>&1; then
-            pytest --cov=. --cov-report=xml --cov-report=term
-          else
-            echo "No tests found, skipping pytest."
-          fi
+          pytest --cov=. --cov-report=xml --cov-report=term || [ $? -eq 5 ]
 
       # Step 6: Upload coverage report to Codecov
       - name: Upload Coverage to Codecov

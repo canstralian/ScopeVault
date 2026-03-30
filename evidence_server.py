@@ -1,13 +1,14 @@
 import uuid
 import datetime
 import hashlib
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from typing import List
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="ScopeVault Evidence Server")
 
 # --- Schemas ---
+
 
 class EvidenceMetadata(BaseModel):
     evidence_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -18,13 +19,16 @@ class EvidenceMetadata(BaseModel):
     tags: List[str] = []
     integrity_verified: bool = True
 
+
 # --- In-Memory Store (Replace with PostgreSQL for Production) ---
 evidence_db = {}
 
 # --- Logic ---
 
+
 def calculate_sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
+
 
 @app.post("/evidence/upload", response_model=EvidenceMetadata)
 async def upload_evidence(
@@ -53,11 +57,13 @@ async def upload_evidence(
 
     return metadata
 
+
 @app.get("/evidence/{evidence_id}", response_model=EvidenceMetadata)
 async def get_evidence_metadata(evidence_id: str):
     if evidence_id not in evidence_db:
         raise HTTPException(status_code=404, detail="Evidence not found")
     return evidence_db[evidence_id]["metadata"]
+
 
 @app.get("/evidence/{evidence_id}/verify")
 async def verify_integrity(evidence_id: str):
