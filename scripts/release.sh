@@ -137,8 +137,8 @@ ensure_repo_context() {
   if [[ -z "$current_remote" ]]; then
     die "origin remote is not configured"
   fi
-  if [[ "$current_remote" != *"ScopeVault"* ]]; then
-    log "warning: origin remote does not appear to be ScopeVault: $current_remote"
+  if [[ "$current_remote" != *"$REPO"* ]]; then
+    log "warning: origin remote does not appear to match '$REPO': $current_remote"
   fi
 }
 
