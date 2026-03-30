@@ -267,9 +267,9 @@ create_release() {
     args+=(--latest)
   fi
 
-  shopt -s nullglob
-  local assets=("$DIST_DIR"/*)
-  shopt -u nullglob
+  local assets=()
+  mapfile -t assets < <(find "$DIST_DIR" -maxdepth 1 -type f -print | sort)
+  [[ "${#assets[@]}" -gt 0 ]] || die "no assets found in dist dir: $DIST_DIR"
   args+=("${assets[@]}")
 
   run gh "${args[@]}"
