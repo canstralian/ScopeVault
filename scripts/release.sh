@@ -291,7 +291,7 @@ verify_release() {
 
   echo "$release_json" | jq '{tag_name, name, draft, prerelease, html_url, created_at, published_at, assets: [.assets[] | {name, size, download_count, browser_download_url}]}'
 
-  mapfile -t local_assets < <(find "$DIST_DIR" -maxdepth 1 -type f -exec basename {} \; | sort)
+  mapfile -t local_assets < <(find "$DIST_DIR" -maxdepth 1 -type f | sed 's#.*/##' | sort)
   mapfile -t remote_assets < <(echo "$release_json" | jq -r '.assets[].name' | sort)
 
   local local_count="${#local_assets[@]}"
