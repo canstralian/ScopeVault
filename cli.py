@@ -3,6 +3,7 @@ import argparse
 import datetime
 import json
 import os
+import shlex
 import subprocess
 
 
@@ -22,10 +23,11 @@ def ensure_in_scope(target, scope):
 
 
 def run_cmd(cmd, log_file):
+    argv = shlex.split(cmd) if isinstance(cmd, str) else list(cmd)
     with open(log_file, "a") as f:
-        f.write(f"\n$ {cmd}\n")
+        f.write(f"\n$ {' '.join(argv)}\n")
         p = subprocess.Popen(
-            cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            argv, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
         for line in p.stdout:
             decoded = line.decode()
