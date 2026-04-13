@@ -3,8 +3,45 @@ import argparse
 import datetime
 import json
 import os
+import re
 import shlex
 import subprocess
+
+ALLOWED_TOOLS = {
+    "nuclei",
+    "nikto",
+    "sqlmap",
+    "nmap",
+    "ffuf",
+    "gobuster",
+    "wfuzz",
+    "whatweb",
+    "wafw00f",
+    "testssl.sh",
+    "hydra",
+    "medusa",
+    "wpscan",
+    "dirb",
+    "dirbuster",
+}
+
+_UNSAFE_ARG_RE = re.compile(r"[;&|`$><!\\\n\r]")
+
+
+def is_allowed_tool(tool):
+    """Return True only if the tool basename is in the allowlist."""
+    return os.path.basename(tool) in ALLOWED_TOOLS
+
+
+def sanitize_extra_args(extra):
+    """Split extra into tokens and reject any containing shell metacharacters."""
+    if not extra:
+        return []
+    tokens = shlex.split(extra)
+    for token in tokens:
+        if _UNSAFE_ARG_RE.search(token):
+            raise ValueError(f"Unsafe character in argument: {token!r}")
+    return tokens
 
 
 def now():
@@ -70,7 +107,13 @@ def attack(args):
     log = os.path.join(run_path, "attack.log")
     if args.tag == "disruptive" and not args.allow:
         raise Exception("Disruptive actions not allowed")
-    run_cmd(f"{args.tool} {args.extra}", log)
+    if not is_allowed_tool(args.tool):
+        raise ValueError(
+            f"Tool {args.tool!r} is not permitted. "
+            f"Allowed tools: {', '.join(sorted(ALLOWED_TOOLS))}"
+        )
+    extra_args = sanitize_extra_args(args.extra)
+    run_cmd([args.tool, *extra_args], log)
 
 
 def report(args):
