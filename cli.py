@@ -53,9 +53,28 @@ def load_scope(path):
         return json.load(f)
 
 
+def _normalize_host(value):
+    value = value.strip().rstrip(".").lower()
+    if value.startswith("[") and "]" in value:
+        return value[1 : value.index("]")]
+    if ":" in value and value.count(":") == 1:
+        host, port = value.rsplit(":", 1)
+        if port.isdigit():
+            return host
+    return value
+
+
 def ensure_in_scope(target, scope):
-    allowed = scope.get("allowed_hosts", [])
-    if not any(target.endswith(a) for a in allowed):
+    normalized_target = _normalize_host(target)
+    allowed = [
+        normalized
+        for normalized in (_normalize_host(host) for host in scope.get("allowed_hosts", []))
+        if normalized
+    ]
+    if not any(
+        normalized_target == host or normalized_target.endswith("." + host)
+        for host in allowed
+    ):
         raise Exception(f"Target {target} not in allowed scope")
 
 
