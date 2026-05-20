@@ -95,7 +95,7 @@ If your change touches any of the following, call it out explicitly in your PR d
 |---|---|---|
 | Scope enforcement | `cli.py` `ensure_in_scope` | Still raises on out-of-scope targets |
 | Disruptive guard | `cli.py` `attack` | Still blocks without `--allow` |
-| Shell execution | `cli.py` `run_cmd` | User-controlled strings are sanitized or quoted (e.g., via `shlex.quote`) |
+| Shell execution | `cli.py` `run_cmd` | `shell=True` with no sanitization is a known constraint — changes must not introduce new unsanitized inputs; prefer `shlex.quote` for any new interpolation |
 | Scope config | `scope.json` | `allowed_hosts` not widened unintentionally |
 
 ---
