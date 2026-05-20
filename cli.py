@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-import os, json, argparse, subprocess, datetime
+import os, json, argparse, subprocess, datetime, shlex
+
+ALLOWED_TOOLS = {"nuclei", "sqlmap", "ffuf", "nikto", "nmap"}
+
+
+def is_allowed_tool(tool):
+    return os.path.basename(tool) == tool and tool in ALLOWED_TOOLS
+
 
 def now():
     return datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
@@ -15,8 +22,10 @@ def ensure_in_scope(target, scope):
 
 def run_cmd(cmd, log_file):
     with open(log_file, "a") as f:
-        f.write(f"\n$ {cmd}\n")
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        f.write(f"\n$ {' '.join(cmd)}\n")
+        p = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
         for line in p.stdout:
             decoded = line.decode()
             print(decoded, end="")
@@ -40,20 +49,22 @@ def init(args):
 def recon(args):
     run_path = latest_run(args.base, args.target)
     log = os.path.join(run_path, "recon.log")
-    run_cmd(f"subfinder -d {args.target} -silent", log)
-    run_cmd(f"httpx -silent", log)
+    run_cmd(["subfinder", "-d", args.target, "-silent"], log)
+    run_cmd(["httpx", "-silent"], log)
 
 def map_stage(args):
     run_path = latest_run(args.base, args.target)
     log = os.path.join(run_path, "map.log")
-    run_cmd(f"gau {args.target}", log)
+    run_cmd(["gau", args.target], log)
 
 def attack(args):
     run_path = latest_run(args.base, args.target)
     log = os.path.join(run_path, "attack.log")
     if args.tag == "disruptive" and not args.allow:
         raise Exception("Disruptive actions not allowed")
-    run_cmd(f"{args.tool} {args.extra}", log)
+    if not is_allowed_tool(args.tool):
+        raise Exception(f"Tool {args.tool!r} is not in the allowed list")
+    run_cmd([args.tool] + shlex.split(args.extra), log)
 
 def report(args):
     run_path = latest_run(args.base, args.target)
