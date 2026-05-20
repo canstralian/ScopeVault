@@ -22,7 +22,7 @@ def ensure_in_scope(target, scope):
 
 def run_cmd(cmd, log_file):
     with open(log_file, "a") as f:
-        f.write(f"\n$ {' '.join(cmd)}\n")
+        f.write(f"\n$ {shlex.join(cmd)}\n")
         p = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
