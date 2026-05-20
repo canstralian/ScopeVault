@@ -30,6 +30,7 @@ def run_cmd(cmd, log_file):
             decoded = line.decode()
             print(decoded, end="")
             f.write(decoded)
+        p.wait()
 
 def latest_run(base, target):
     target_dir = os.path.join(base, target)
@@ -64,7 +65,7 @@ def attack(args):
         raise Exception("Disruptive actions not allowed")
     if not is_allowed_tool(args.tool):
         raise Exception(f"Tool {args.tool!r} is not in the allowed list")
-    run_cmd([args.tool] + shlex.split(args.extra), log)
+    run_cmd([args.tool, *shlex.split(args.extra)], log)
 
 def report(args):
     run_path = latest_run(args.base, args.target)
