@@ -28,7 +28,7 @@ Thank you for your interest in contributing. ScopeVault is a minimal, security-s
 ScopeVault wraps external binaries. Ensure these are on your `PATH`:
 
 ```
-subfinder   httpx   gau   nuclei
+subfinder   httpx   gau   ffuf   nuclei
 ```
 
 Python 3.8+ is required. No pip packages are needed.
@@ -36,8 +36,8 @@ Python 3.8+ is required. No pip packages are needed.
 ### Clone and explore
 
 ```bash
-git clone https://github.com/canstralian/scopevault.git
-cd scopevault
+git clone https://github.com/canstralian/ScopeVault.git
+cd ScopeVault
 python cli.py --help
 ```
 
@@ -85,7 +85,7 @@ Reference an issue number when one exists: `Fix #42: ...`
 - `snake_case` for all functions and variables.
 - All logic lives in `cli.py`. Do not split into modules without discussion.
 - No comments unless the *why* is genuinely non-obvious.
-- Error handling via bare `Exception` with a descriptive message.
+- Error handling via specific built-in exceptions (e.g., `ValueError`, `RuntimeError`) with a descriptive message; avoid bare `Exception`.
 
 ### Security-sensitive areas
 
@@ -95,7 +95,7 @@ If your change touches any of the following, call it out explicitly in your PR d
 |---|---|---|
 | Scope enforcement | `cli.py` `ensure_in_scope` | Still raises on out-of-scope targets |
 | Disruptive guard | `cli.py` `attack` | Still blocks without `--allow` |
-| Shell execution | `cli.py` `run_cmd` | User-controlled strings not injected |
+| Shell execution | `cli.py` `run_cmd` | User-controlled strings are sanitized or quoted (e.g., via `shlex.quote`) |
 | Scope config | `scope.json` | `allowed_hosts` not widened unintentionally |
 
 ---
