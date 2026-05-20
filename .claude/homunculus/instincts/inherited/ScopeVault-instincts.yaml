@@ -1,0 +1,297 @@
+# Instincts generated from https://github.com/canstralian/ScopeVault
+# Generated: 2026-05-20T03:06:10.218Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: ScopeVault-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/canstralian/ScopeVault
+---
+
+# ScopeVault Commit Length
+
+## Action
+
+Write moderate-length commit messages (~72 characters)
+
+## Evidence
+
+- Average commit message length: 72 chars
+- Based on 1 commits
+
+---
+id: ScopeVault-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/canstralian/ScopeVault
+---
+
+# ScopeVault Naming Files
+
+## Action
+
+Use snake_case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: snake_case
+
+---
+id: ScopeVault-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/canstralian/ScopeVault
+---
+
+# ScopeVault Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: ScopeVault-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/canstralian/ScopeVault
+---
+
+# ScopeVault Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: ScopeVault-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/canstralian/ScopeVault
+---
+
+# ScopeVault Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: scopevault-instinct-file-naming
+trigger: "When creating a new Python file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct File Naming
+
+## Action
+
+Name the file using snake_case
+
+## Evidence
+
+- Pattern in namingConventions.files: snake_case
+
+---
+id: scopevault-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Function Naming
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions: camelCase
+
+---
+id: scopevault-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes: PascalCase
+
+---
+id: scopevault-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants: SCREAMING_SNAKE_CASE
+
+---
+id: scopevault-instinct-import-style
+trigger: "When importing modules within the package"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Import Style
+
+## Action
+
+Use relative imports
+
+## Evidence
+
+- Pattern in importStyle: relative
+
+---
+id: scopevault-instinct-export-style
+trigger: "When exporting functions or classes"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle: named
+
+---
+id: scopevault-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Test Location
+
+## Action
+
+Place test files in a separate directory from source files
+
+## Evidence
+
+- Pattern in architecture.testLocation: separate
+
+---
+id: scopevault-instinct-unit-test-generation
+trigger: "When changes are made in a pull request"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Unit Test Generation
+
+## Action
+
+Generate unit tests for the PR changes
+
+## Evidence
+
+- Seen in commit: 'CodeRabbit Generated Unit Tests: Add generated unit tests for PR changes'
+
+---
+id: scopevault-instinct-git-commit-format
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Git Commit Format
+
+## Action
+
+Write freeform commit messages without a required prefix
+
+## Evidence
+
+- Pattern in commits.type: freeform
+- No prefixes present in commits.prefixes
+
+---
+id: scopevault-instinct-git-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: canstralian/ScopeVault
+---
+
+# Scopevault Instinct Git Commit Length
+
+## Action
+
+Aim for a commit message length around 72 characters
+
+## Evidence
+
+- Pattern in commits.averageLength: 72
+
