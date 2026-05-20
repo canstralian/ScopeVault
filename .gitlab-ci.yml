@@ -1,0 +1,77 @@
+stages:
+  - validate
+  - lint
+  - security
+
+default:
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet pycodestyle bandit
+
+# ── validate ─────────────────────────────────────────────────────────────────
+
+syntax-check:
+  stage: validate
+  script:
+    - python -m py_compile cli.py
+    - echo "Syntax OK"
+
+scope-check:
+  stage: validate
+  script:
+    - python -c "
+import json, sys
+with open('scope.json') as f:
+    s = json.load(f)
+assert isinstance(s.get('allowed_hosts'), list) and s['allowed_hosts'], \
+    'allowed_hosts must be a non-empty list'
+assert isinstance(s.get('allow_disruptive'), bool), \
+    'allow_disruptive must be a boolean'
+print('scope.json OK — allowed_hosts:', s['allowed_hosts'])
+"
+
+# ── lint ──────────────────────────────────────────────────────────────────────
+
+pep8:
+  stage: lint
+  script:
+    - pycodestyle --max-line-length=100 cli.py
+  allow_failure: true
+
+# ── security ──────────────────────────────────────────────────────────────────
+
+bandit:
+  stage: security
+  script:
+    # -ll  = report medium and high severity issues only
+    # Explicitly flag shell=True usage (B602/B605) at high severity
+    - bandit -ll -r cli.py
+  artifacts:
+    when: always
+    reports:
+      # GitLab Security Dashboard ingests SAST JSON reports
+      sast: bandit-report.json
+    expire_in: 30 days
+  before_script:
+    - pip install --quiet bandit
+    - bandit -ll -r cli.py -f json -o bandit-report.json || true
+
+scope-injection-guard:
+  stage: security
+  script:
+    - |
+      echo "Checking that ensure_in_scope() is present and not weakened..."
+      grep -n "ensure_in_scope" cli.py
+      python -c "
+import ast, sys
+with open('cli.py') as f:
+    tree = ast.parse(f.read())
+fnames = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+assert 'ensure_in_scope' in fnames, 'ensure_in_scope() is missing!'
+
+# Verify disruptive guard is present
+src = open('cli.py').read()
+assert 'args.tag == \"disruptive\"' in src and 'args.allow' in src, \
+    'Disruptive action guard appears to have been removed!'
+print('Security guards intact.')
+"
