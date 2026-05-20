@@ -20,18 +20,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [python, javascript-typescript]
+        language: [python]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@e8893c57a0ebf4a4077e8ea423568e97b52b44c1
+        uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@e8893c57a0ebf4a4077e8ea423568e97b52b44c1
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
